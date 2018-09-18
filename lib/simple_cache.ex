@@ -1,13 +1,10 @@
 defmodule SimpleCache do
+  @moduledoc """
+  Simple cache implementation with no locks or other more complicated features.
+  """
   @table_name Application.get_env(:simple_cache, :cache_name, :simple_cache)
   @global_ttl_ms Application.get_env(:simple_cache, :global_ttl_ms, 10_000)
-  @moduledoc """
-  Documentation for SimpleCache.
-  """
 
-  @doc """
-
-  """
   def get(key) do
     :ets.lookup(@table_name, key) |> List.first()
   end
@@ -29,7 +26,7 @@ defmodule SimpleCache do
   end
 
   @doc """
-  Deletes value from cache
+  Deletes value from cache returns ok if doesn't exist also
   """
   def delete(key) do
     t_ref = :ets.lookup_element(@table_name, key, 3)
@@ -41,7 +38,6 @@ defmodule SimpleCache do
   Updates existing value in cache based on old value.
   Warning the below may thrash a bit on heavy contention.
   """
-  # def update_existing(key, fn(old_value) -> ... end) do
   def update_existing(key, passed_fn) do
     with [{key, old_val, _timer}] <- :ets.take(@table_name, key),
          true <- SimpleCache.insert_new(key, passed_fn.(old_val)) do
@@ -59,8 +55,8 @@ defmodule SimpleCache do
   Gets or stores a value based on a passed in function.
   Warning the below may thrash a bit on heavy contention.
   """
-  defp get_or_store(key, passed_fn) do
-    case :ets.take(@table_name, key) do
+  def get_or_store(key, passed_fn) do
+    case :ets.lookup(@table_name, key) do
       [] ->
         new_val = passed_fn.()
 
@@ -86,7 +82,7 @@ defmodule SimpleCache do
   end
 
   @doc """
-  Sets the ttl to a specific value in ms
+  Sets the ttl to a specific value in ms for a key
   """
   def set_ttl_ms(key, time_ms) do
     t_ref = :ets.lookup_element(@table_name, key, 3)
