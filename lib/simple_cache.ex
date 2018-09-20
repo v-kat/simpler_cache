@@ -13,19 +13,28 @@ defmodule SimpleCache do
   @doc """
   Inserts item or overwrites it
   """
-  @spec put(any, any) :: true
+  @spec put(any, any) :: {:ok, :inserted} | {:error, term}
   def put(key, value) do
-    {:ok, t_ref} = :timer.apply_after(@global_ttl_ms, :ets, :delete, [@table_name, key])
-    :ets.insert(@table_name, {key, value, t_ref})
+    with {:ok, t_ref} <- :timer.apply_after(@global_ttl_ms, :ets, :delete, [@table_name, key]),
+         :ets.insert(@table_name, {key, value, t_ref}) do
+      {:ok, :inserted}
+    else
+      {:error, err} -> {:error, err}
+    end
   end
 
   @doc """
   Inserts new item into cache
   """
-  @spec insert_new(any, any) :: boolean
+  @spec insert_new(any, any) :: {:ok, :inserted} | {:error, :item_is_in_cache} | {:error, term}
   def insert_new(key, value) do
-    {:ok, t_ref} = :timer.apply_after(@global_ttl_ms, :ets, :delete, [@table_name, key])
-    :ets.insert_new(@table_name, {key, value, t_ref})
+    with {:ok, t_ref} <- :timer.apply_after(@global_ttl_ms, :ets, :delete, [@table_name, key]),
+         true <- :ets.insert_new(@table_name, {key, value, t_ref}) do
+      {:ok, :inserted}
+    else
+      {:error, err} -> {:error, err}
+      false -> {:error, :item_is_in_cache}
+    end
   end
 
   @doc """
@@ -39,39 +48,33 @@ defmodule SimpleCache do
   end
 
   @doc """
-  Updates existing value in cache based on old value.
-  Warning the below may thrash a bit on heavy contention.
+  Updates existing value in cache based on old value
+  Warning the below may retry a bit on heavy contention
   """
-  @spec update_existing(any, function) :: boolean
+  @spec update_existing(any, function) :: {:ok, :updated} | {:error, :failed_to_find_entry}
   def update_existing(key, passed_fn) when is_function(passed_fn) do
     with [{key, old_val, _timer}] <- :ets.take(@table_name, key),
-         true <- SimpleCache.insert_new(key, passed_fn.(old_val)) do
-      true
+         {:ok, :inserted} <- SimpleCache.insert_new(key, passed_fn.(old_val)) do
+      {:ok, :updated}
     else
-      [] ->
-        false
-
-      _ ->
-        get_or_store(key, passed_fn)
+      [] -> {:error, :failed_to_find_entry}
+      _ -> get_or_store(key, passed_fn)
     end
   end
 
   @doc """
-  Gets or stores an item based on a passed in function.
-  Warning the below may thrash a bit on heavy contention.
+  Gets or stores an item based on a passed in function
+  Warning the below may retry a bit on heavy contention
   """
   @spec get_or_store(any, function) :: any
   def get_or_store(key, passed_fn) when is_function(passed_fn) do
     with [] <- :ets.lookup(@table_name, key),
          new_val = passed_fn.(),
-         true <- SimpleCache.insert_new(key, new_val) do
+         {:ok, :inserted} <- SimpleCache.insert_new(key, new_val) do
       new_val
     else
-      [{_key, val, _timer}] ->
-        val
-
-      false ->
-        get_or_store(key, passed_fn)
+      [{_key, val, _timer}] -> val
+      {:error, _reason} -> get_or_store(key, passed_fn)
     end
   end
 
@@ -84,21 +87,22 @@ defmodule SimpleCache do
   end
 
   @doc """
-  Sets the ttl to a specific value in ms for a key
+  Sets the ttl to a specific value in ms for an item
   """
-  @spec set_ttl_ms(any, pos_integer) :: boolean
+  @spec set_ttl_ms(any, pos_integer) ::
+          {:ok, :updated} | {:error, :failed_to_update_element}
   def set_ttl_ms(key, time_ms) when time_ms > 0 do
     t_ref = :ets.lookup_element(@table_name, key, 3)
-    _ = :timer.cancel(t_ref)
+    :timer.cancel(t_ref)
     {:ok, new_t_ref} = :timer.apply_after(time_ms, :ets, :delete, [@table_name, key])
 
     case :ets.update_element(@table_name, key, {3, new_t_ref}) do
       true ->
-        true
+        {:ok, :updated}
 
       false ->
-        _ = :timer.cancel(new_t_ref)
-        false
+        :timer.cancel(new_t_ref)
+        {:error, :failed_to_update_element}
     end
   end
 end
