@@ -58,7 +58,7 @@ defmodule SimpleCache do
       {:ok, :updated}
     else
       [] -> {:error, :failed_to_find_entry}
-      _ -> get_or_store(key, passed_fn)
+      _ -> update_existing(key, passed_fn)
     end
   end
 
@@ -90,19 +90,24 @@ defmodule SimpleCache do
   Sets the ttl to a specific value in ms for an item
   """
   @spec set_ttl_ms(any, pos_integer) ::
-          {:ok, :updated} | {:error, :failed_to_update_element}
+          {:ok, :updated} | {:error, :failed_to_update_element} | {:error, term}
   def set_ttl_ms(key, time_ms) when time_ms > 0 do
     t_ref = :ets.lookup_element(@table_name, key, 3)
     :timer.cancel(t_ref)
-    {:ok, new_t_ref} = :timer.apply_after(time_ms, :ets, :delete, [@table_name, key])
 
-    case :ets.update_element(@table_name, key, {3, new_t_ref}) do
-      true ->
-        {:ok, :updated}
+    case :timer.apply_after(time_ms, :ets, :delete, [@table_name, key]) do
+      {:ok, new_t_ref} ->
+        case :ets.update_element(@table_name, key, {3, new_t_ref}) do
+          true ->
+            {:ok, :updated}
 
-      false ->
-        :timer.cancel(new_t_ref)
-        {:error, :failed_to_update_element}
+          false ->
+            :timer.cancel(new_t_ref)
+            {:error, :failed_to_update_element}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 end
