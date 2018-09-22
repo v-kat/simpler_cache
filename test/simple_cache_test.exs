@@ -1,8 +1,6 @@
 defmodule SimpleCacheTest do
   use ExUnit.Case
-  doctest SimpleCache
 
-  test "greets the world" do
-    assert SimpleCache.hello() == :world
-  end
+  # TODO make property tests for set_ttl_ms and other timer stuff
+  # Also for size
 end

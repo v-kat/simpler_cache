@@ -4,10 +4,22 @@ defmodule SimpleCache do
   """
   @table_name Application.get_env(:simple_cache, :cache_name, :simple_cache)
   @global_ttl_ms Application.get_env(:simple_cache, :global_ttl_ms, 10_000)
+  @type update_function :: (any -> any)
+  @type fallback_function :: (() -> any)
 
   @spec get(any) :: nil | any
   def get(key) do
-    :ets.lookup(@table_name, key) |> List.first()
+    maybe_tuple =
+      :ets.lookup(@table_name, key)
+      |> List.first()
+
+    case maybe_tuple do
+      item when is_tuple(item) ->
+        elem(item, 1)
+
+      _ ->
+        nil
+    end
   end
 
   @doc """
@@ -42,17 +54,22 @@ defmodule SimpleCache do
   """
   @spec delete(any) :: true
   def delete(key) do
-    t_ref = :ets.lookup_element(@table_name, key, 3)
-    :timer.cancel(t_ref)
-    :ets.delete(@table_name, key)
+    case :ets.take(@table_name, key) do
+      [] ->
+        true
+
+      [{_k, _v, t_ref} | _] ->
+        :timer.cancel(t_ref)
+        true
+    end
   end
 
   @doc """
   Updates existing value in cache based on old value
   Warning the below may retry a bit on heavy contention
   """
-  @spec update_existing(any, function) :: {:ok, :updated} | {:error, :failed_to_find_entry}
-  def update_existing(key, passed_fn) when is_function(passed_fn) do
+  @spec update_existing(any, update_function) :: {:ok, :updated} | {:error, :failed_to_find_entry}
+  def update_existing(key, passed_fn) when is_function(passed_fn, 1) do
     with [{key, old_val, _timer}] <- :ets.take(@table_name, key),
          {:ok, :inserted} <- SimpleCache.insert_new(key, passed_fn.(old_val)) do
       {:ok, :updated}
@@ -66,8 +83,8 @@ defmodule SimpleCache do
   Gets or stores an item based on a passed in function
   Warning the below may retry a bit on heavy contention
   """
-  @spec get_or_store(any, function) :: any
-  def get_or_store(key, passed_fn) when is_function(passed_fn) do
+  @spec get_or_store(any, fallback_function) :: any
+  def get_or_store(key, passed_fn) when is_function(passed_fn, 0) do
     with [] <- :ets.lookup(@table_name, key),
          new_val = passed_fn.(),
          {:ok, :inserted} <- SimpleCache.insert_new(key, new_val) do
