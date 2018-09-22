@@ -1,0 +1,27 @@
+language: elixir
+elixir:
+  - 1.7.3
+otp_release:
+  - 21
+dist: trusty
+sudo: false
+services: true
+
+cache:
+  directories:
+    - _build
+    - deps
+
+before_install: true
+
+before_script:
+  - mix local.hex --force
+  - mix deps.get --only test
+  - mix deps.clean --unused
+  - MIX_ENV=test mix compile --warnings-as-errors
+  - MIX_ENV=test travis_wait mix dialyzer --plt
+
+script:
+ - mix test
+ - mix coveralls.travis
+ - MIX_ENV=test mix dialyzer --halt-exit-status
