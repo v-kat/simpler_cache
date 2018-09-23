@@ -7,16 +7,17 @@ defmodule PropCheck.Test.CacheModel do
   use PropCheck.StateM.DSL
   require Logger
 
+  @table_name Application.get_env(:simple_cache, :cache_name, :simple_cache)
   #########################################################################
   ### The properties
   #########################################################################
 
   @tag timeout: 240_000
-  property "run the cache", [:verbose] do
+  property "run the cache", [:verbose, numtests: 1_000] do
     forall cmds <- commands(__MODULE__) do
       trap_exit do
         execution = run_commands(cmds)
-        :ets.delete_all_objects(:simple_cache)
+        :ets.delete_all_objects(@table_name)
 
         (execution.result == :ok)
         |> when_fail(
@@ -34,16 +35,16 @@ defmodule PropCheck.Test.CacheModel do
   end
 
   # Generators for keys and values
-  # terms -> integer for testing purposes
-  def key(), do: integer()
+  # term -> integer for testing purposes
+  def key(), do: int()
 
-  def val(), do: integer()
+  def val(), do: int()
 
   # This isn't the best because it's not properly deriving a new value from the old value
-  # but to do that for all integer possibilities would be a bit much
-  def update_function(), do: fn old_value -> {old_value, integer()} end
+  # but to do that for all int possibilities would be a bit much
+  def update_function(), do: fn old_value -> {old_value, int()} end
 
-  def fallback_function(), do: fn -> integer() end
+  def fallback_function(), do: fn -> int() end
 
   #########################################################################
   ### The model
@@ -54,10 +55,10 @@ defmodule PropCheck.Test.CacheModel do
   def weight(_),
     do: %{
       get: 1,
-      put: 2,
-      insert_new: 1,
-      delete: 1,
-      update_existing: 1,
+      # put: 2,
+      insert_new: 2,
+      delete: 4,
+      # update_existing: 1,
       get_or_store: 2,
       size: 1
     }
@@ -74,11 +75,25 @@ defmodule PropCheck.Test.CacheModel do
   defcommand :put do
     def impl(key, val), do: SimpleCache.put(key, val)
     def args(_state), do: [key(), val()]
-    def next(old_state, [key, val], _call_result), do: Map.put(old_state, key, val)
+    def next(old_state, [key, val], _call_result) do
+      new_map = Map.put(old_state, key, val)
+      IO.inspect old_state
+      IO.inspect key
+      IO.inspect val
+      IO.inspect new_map
+      IO.inspect "@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+      new_map
+    end
 
-    def post(entries, [key, _val], call_result) do
-      case Map.get(entries, key) do
-        _res -> call_result == {:ok, :inserted}
+    def post(entries, [key, _val] = args, call_result) do
+      case Map.has_key?(entries, key) do
+        false ->
+          IO.inspect entries
+          IO.inspect args
+          IO.inspect key
+          IO.inspect "&&&&&&&&&&&&&&&&&&&&&"
+          false
+        true -> call_result == {:ok, :inserted}
       end
     end
   end
@@ -88,31 +103,35 @@ defmodule PropCheck.Test.CacheModel do
     def args(_state), do: [key(), val()]
     def next(old_state, _args, {:error, _any}), do: old_state
     def next(old_state, [key, val], _any), do: Map.put(old_state, key, val)
+    def pre(state, [key, _val]), do: !Map.has_key?(state, key)
 
-    # def post(entries, [key, new_val], call_result) do
-    #   case Map.get(entries, key) do
-    #     val when val == new_val -> call_result == {:error, :item_is_in_cache}
-    #     _any -> call_result == {:ok, :inserted}
-    #   end
-    # end
+    def post(entries, [key, new_val], call_result) do
+      case Map.get(entries, key, new_val) do
+        val when val != new_val ->
+          call_result == {:error, :item_is_in_cache}
+        _any ->
+          call_result == {:ok, :inserted}
+      end
+    end
   end
 
   defcommand :delete do
     def impl(key), do: SimpleCache.delete(key)
     def args(_state), do: [key()]
+
     def next(old_state, [key], _call_result), do: Map.delete(old_state, key)
 
-    # def post(entries, [key], call_result) do
-    #   case Map.get(entries, key) do
-    #     nil ->
-    #       call_result == true
+    def pre(state, [key]), do: Map.get(state, key, false) != false
 
-    #     _any ->
-    #       IO.inspect("wtf----------")
-    #       IO.inspect(entries)
-    #       call_result == false
-    #   end
-    # end
+    def post(entries, [key], call_result) do
+      case Map.get(entries, key) do
+        nil ->
+          call_result == true
+
+        _any ->
+          call_result == true
+      end
+    end
   end
 
   defcommand :update_existing do
@@ -148,9 +167,9 @@ defmodule PropCheck.Test.CacheModel do
       end
     end
 
-    # def post(entries, [key, _fallback_fn], call_result) do
-    #   call_result == Map.get(entries, key)
-    # end
+    def post(entries, [key, fallback_fn], call_result) do
+      call_result == Map.get(entries, key, fallback_fn.())
+    end
   end
 
   defcommand :size do
