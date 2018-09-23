@@ -1,7 +1,5 @@
 # SimpleCache
 
-**TODO: Add description**
-
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
@@ -15,11 +13,18 @@ def deps do
 end
 ```
 
-table_name = Application.get_env(:simple_cache, :cache_name, :simple_cache)
-ttl_sec = Application.get_env(:simple_cache, :global_ttl_sec, 30)
+- Sample configs
+```
+config :simple_cache,
+  cache_name: :simple_cache_test,
+  global_ttl_ms: 100_000
+```
+
+## Description
 
 A very simple cache. It uses timers for the ttl and ets for the storage.
-No locks are built for ets and atomic replace is done, when expected.
-Model and property testing are used to verify things.
+No locks are built upon for ets and atomic replace is done, when expected.
 Mostly wrapper around ets and kept very simple by using newer apis and recent erlang improvements.
+
+Using property model testing and property tests to verify the cache via propcheck.
 

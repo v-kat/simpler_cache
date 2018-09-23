@@ -70,7 +70,7 @@ defmodule SimpleCache do
   """
   @spec update_existing(any, update_function) :: {:ok, :updated} | {:error, :failed_to_find_entry}
   def update_existing(key, passed_fn) when is_function(passed_fn, 1) do
-    with [{key, old_val, _timer}] <- :ets.take(@table_name, key),
+    with [{key, old_val, _timer} | _] <- :ets.take(@table_name, key),
          {:ok, :inserted} <- SimpleCache.insert_new(key, passed_fn.(old_val)) do
       {:ok, :updated}
     else
@@ -107,11 +107,11 @@ defmodule SimpleCache do
   end
 
   @doc """
-  Sets the ttl to a specific value in ms for an item
+  Sets the ttl to a specific value in ms over 100 for an item
   """
   @spec set_ttl_ms(any, pos_integer) ::
           {:ok, :updated} | {:error, :failed_to_update_element} | {:error, term}
-  def set_ttl_ms(key, time_ms) when time_ms > 0 do
+  def set_ttl_ms(key, time_ms) when time_ms > 100 do
     t_ref = :ets.lookup_element(@table_name, key, 3)
     :timer.cancel(t_ref)
 
