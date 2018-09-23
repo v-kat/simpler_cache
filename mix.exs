@@ -24,8 +24,6 @@ defmodule SimpleCache.MixProject do
   defp deps do
     [
       {:propcheck, "~> 1.1", only: :test},
-      # Using streamdata to include map type until propcheck uses proper 1.3 and has a map type
-      {:stream_data, "~> 0.1", only: :test},
       {:excoveralls, "~> 0.10", only: :test},
       {:dialyxir, "~> 0.5", only: [:dev], runtime: false}
     ]

@@ -90,8 +90,11 @@ defmodule SimpleCache do
          {:ok, :inserted} <- SimpleCache.insert_new(key, new_val) do
       new_val
     else
-      [{_key, val, _timer}] -> val
-      {:error, _reason} -> get_or_store(key, passed_fn)
+      [{_key, val, _timer} | _] ->
+        val
+
+      {:error, _reason} ->
+        get_or_store(key, passed_fn)
     end
   end
 
