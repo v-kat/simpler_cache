@@ -18,10 +18,10 @@ before_script:
   - mix local.hex --force
   - mix deps.get --only test
   - mix deps.clean --unused
-  - MIX_ENV=test mix compile --warnings-as-errors
+  - mix compile --warnings-as-errors
   - travis_wait mix dialyzer --plt
 
 script:
  - mix test
- - mix coveralls.travis
- - MIX_ENV=test mix dialyzer --halt-exit-status
+ # - mix coveralls.travis
+ - mix dialyzer --halt-exit-status
