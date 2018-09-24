@@ -1,12 +1,15 @@
-defmodule SimpleCache do
+defmodule SimplerCache do
   @moduledoc """
   Simple cache implementation with no locks or other more complicated features.
   """
-  @table_name Application.get_env(:simple_cache, :cache_name, :simple_cache)
-  @global_ttl_ms Application.get_env(:simple_cache, :global_ttl_ms, 10_000)
+  @table_name Application.get_env(:simpler_cache, :cache_name, :simpler_cache)
+  @global_ttl_ms Application.get_env(:simpler_cache, :global_ttl_ms, 10_000)
   @type update_function :: (any -> any)
   @type fallback_function :: (() -> any)
 
+  @doc """
+  Returns an item from cache or nil if not found
+  """
   @spec get(any) :: nil | any
   def get(key) do
     maybe_tuple =
@@ -23,7 +26,7 @@ defmodule SimpleCache do
   end
 
   @doc """
-  Inserts item or overwrites it
+  Inserts new item or overwrites old item's value
   """
   @spec put(any, any) :: {:ok, :inserted} | {:error, term}
   def put(key, value) do
@@ -50,7 +53,7 @@ defmodule SimpleCache do
   end
 
   @doc """
-  Deletes item from cache returns ok if doesn't exist as well
+  Deletes item from cache returns successfully if it doesn't exist as well
   """
   @spec delete(any) :: true
   def delete(key) do
@@ -71,7 +74,7 @@ defmodule SimpleCache do
   @spec update_existing(any, update_function) :: {:ok, :updated} | {:error, :failed_to_find_entry}
   def update_existing(key, passed_fn) when is_function(passed_fn, 1) do
     with [{key, old_val, _timer} | _] <- :ets.take(@table_name, key),
-         {:ok, :inserted} <- SimpleCache.insert_new(key, passed_fn.(old_val)) do
+         {:ok, :inserted} <- SimplerCache.insert_new(key, passed_fn.(old_val)) do
       {:ok, :updated}
     else
       [] -> {:error, :failed_to_find_entry}
@@ -87,7 +90,7 @@ defmodule SimpleCache do
   def get_or_store(key, passed_fn) when is_function(passed_fn, 0) do
     with [] <- :ets.lookup(@table_name, key),
          new_val = passed_fn.(),
-         {:ok, :inserted} <- SimpleCache.insert_new(key, new_val) do
+         {:ok, :inserted} <- SimplerCache.insert_new(key, new_val) do
       new_val
     else
       [{_key, val, _timer} | _] ->

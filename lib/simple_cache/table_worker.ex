@@ -1,6 +1,6 @@
-defmodule SimpleCache.TableWorker do
+defmodule SimplerCache.TableWorker do
   use GenServer
-  @table_name Application.get_env(:simple_cache, :cache_name, :simple_cache)
+  @table_name Application.get_env(:simpler_cache, :cache_name, :simpler_cache)
 
   def start_link(_arg) do
     GenServer.start_link(__MODULE__, %{})

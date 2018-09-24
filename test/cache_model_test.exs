@@ -5,9 +5,8 @@ defmodule PropCheck.Test.CacheModel do
   use ExUnit.Case
   use PropCheck
   use PropCheck.StateM.DSL
-  require Logger
 
-  @table_name Application.get_env(:simple_cache, :cache_name, :simple_cache)
+  @table_name Application.get_env(:simpler_cache, :cache_name, :simpler_cache)
   #########################################################################
   ### The properties
   #########################################################################
@@ -62,7 +61,7 @@ defmodule PropCheck.Test.CacheModel do
     }
 
   defcommand :get do
-    def impl(key), do: SimpleCache.get(key)
+    def impl(key), do: SimplerCache.get(key)
     def args(_state), do: [key()]
 
     def post(entries, [key], call_result) do
@@ -71,14 +70,14 @@ defmodule PropCheck.Test.CacheModel do
   end
 
   defcommand :put do
-    def impl(key, val), do: SimpleCache.put(key, val)
+    def impl(key, val), do: SimplerCache.put(key, val)
     def args(_state), do: [key(), val()]
     def next(old_state, _args, {:error, _any}), do: old_state
     def next(old_state, [key, val], _any), do: Map.put(old_state, key, val)
   end
 
   defcommand :insert_new do
-    def impl(key, val), do: SimpleCache.insert_new(key, val)
+    def impl(key, val), do: SimplerCache.insert_new(key, val)
     def args(_state), do: [key(), val()]
     def next(old_state, _args, {:error, _any}), do: old_state
     def next(old_state, [key, val], _any), do: Map.put(old_state, key, val)
@@ -96,7 +95,7 @@ defmodule PropCheck.Test.CacheModel do
   end
 
   defcommand :delete do
-    def impl(key), do: SimpleCache.delete(key)
+    def impl(key), do: SimplerCache.delete(key)
     def args(_state), do: [key()]
 
     def next(old_state, [key], _call_result), do: Map.delete(old_state, key)
@@ -113,7 +112,7 @@ defmodule PropCheck.Test.CacheModel do
   end
 
   defcommand :update_existing do
-    def impl(key, passed_fn), do: SimpleCache.update_existing(key, passed_fn)
+    def impl(key, passed_fn), do: SimplerCache.update_existing(key, passed_fn)
     def args(_state), do: [key(), update_function()]
 
     def next(old_state, [key, update_fn], _call_result) do
@@ -135,7 +134,7 @@ defmodule PropCheck.Test.CacheModel do
   end
 
   defcommand :get_or_store do
-    def impl(key, fallback_fn), do: SimpleCache.get_or_store(key, fallback_fn)
+    def impl(key, fallback_fn), do: SimplerCache.get_or_store(key, fallback_fn)
     def args(_state), do: [key(), fallback_function()]
 
     def next(old_state, [key, fallback_fn], _call_result) do
@@ -154,7 +153,7 @@ defmodule PropCheck.Test.CacheModel do
   end
 
   defcommand :size do
-    def impl(), do: SimpleCache.size()
+    def impl(), do: SimplerCache.size()
     def args(_state), do: []
 
     def post(entries, [], call_result) do
