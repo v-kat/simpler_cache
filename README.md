@@ -1,5 +1,7 @@
 # SimplerCache
 
+[![Build Status](https://travis-ci.com/IRog/simpler_cache.svg?branch=master)](https://travis-ci.com/IRog/simpler_cache)
+
 ## Description
 
 A very simple cache. It uses timers for the ttl and ets for the storage.
