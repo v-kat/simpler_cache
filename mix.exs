@@ -50,7 +50,7 @@ defmodule SimplerCache.MixProject do
   defp package() do
     [
       name: "simpler_cache",
-      files: ~w(lib .formatter.exs mix.exs README* LICENSE*),
+      files: ~w(lib doc .formatter.exs mix.exs README* LICENSE*),
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/IRog/simpler_cache"}
     ]

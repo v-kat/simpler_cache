@@ -74,6 +74,12 @@ defmodule PropCheck.Test.CacheModel do
     def args(_state), do: [key(), val()]
     def next(old_state, _args, {:error, _any}), do: old_state
     def next(old_state, [key, val], _any), do: Map.put(old_state, key, val)
+    def post(entries, [key, _val], call_result) do
+      case Map.get(entries, key) do
+        _any ->
+          call_result == {:ok, :inserted}
+      end
+    end
   end
 
   defcommand :insert_new do
