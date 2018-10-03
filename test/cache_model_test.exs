@@ -33,15 +33,17 @@ defmodule PropCheck.Test.CacheModel do
     end
   end
 
-  # Generators for keys and values
-  # term -> integer for testing purposes
-  def key(), do: term()
+  #########################################################################
+  ### Generators
+  #########################################################################
 
-  def val(), do: term()
+  defp key(), do: term()
 
-  def update_function(), do: function(1, term())
+  defp val(), do: term()
 
-  def fallback_function(), do: function(0, term())
+  defp update_function(), do: function(1, term())
+
+  defp fallback_function(), do: function(0, term())
 
   #########################################################################
   ### The model
@@ -74,6 +76,7 @@ defmodule PropCheck.Test.CacheModel do
     def args(_state), do: [key(), val()]
     def next(old_state, _args, {:error, _any}), do: old_state
     def next(old_state, [key, val], _any), do: Map.put(old_state, key, val)
+
     def post(entries, [key, _val], call_result) do
       case Map.get(entries, key) do
         _any ->
@@ -87,7 +90,6 @@ defmodule PropCheck.Test.CacheModel do
     def args(_state), do: [key(), val()]
     def next(old_state, _args, {:error, _any}), do: old_state
     def next(old_state, [key, val], _any), do: Map.put(old_state, key, val)
-    def pre(state, [key, _val]), do: !Map.has_key?(state, key)
 
     def post(entries, [key, new_val], call_result) do
       case Map.get(entries, key, new_val) do

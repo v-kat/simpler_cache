@@ -28,7 +28,7 @@ defmodule SimplerCache do
   @doc """
   Inserts new item or overwrites old item's value
   """
-  @spec put(any, any) :: {:ok, :inserted} | {:error, term}
+  @spec put(any, any) :: {:ok, :inserted} | {:error, any}
   def put(key, value) do
     with {:ok, t_ref} <- :timer.apply_after(@global_ttl_ms, :ets, :delete, [@table_name, key]),
          :ets.insert(@table_name, {key, value, t_ref}) do
@@ -41,7 +41,7 @@ defmodule SimplerCache do
   @doc """
   Inserts new item into cache
   """
-  @spec insert_new(any, any) :: {:ok, :inserted} | {:error, :item_is_in_cache} | {:error, term}
+  @spec insert_new(any, any) :: {:ok, :inserted} | {:error, :item_is_in_cache} | {:error, any}
   def insert_new(key, value) do
     with {:ok, t_ref} <- :timer.apply_after(@global_ttl_ms, :ets, :delete, [@table_name, key]),
          true <- :ets.insert_new(@table_name, {key, value, t_ref}) do
@@ -113,7 +113,7 @@ defmodule SimplerCache do
   Sets the ttl to a specific value in ms over 100 for an item
   """
   @spec set_ttl_ms(any, pos_integer) ::
-          {:ok, :updated} | {:error, :failed_to_update_element} | {:error, term}
+          {:ok, :updated} | {:error, :failed_to_update_element} | {:error, any}
   def set_ttl_ms(key, time_ms) when time_ms > 100 do
     t_ref = :ets.lookup_element(@table_name, key, 3)
     :timer.cancel(t_ref)

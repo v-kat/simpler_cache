@@ -13,7 +13,7 @@ defmodule SimplerCache.MixProject do
       test_coverage: [tool: ExCoveralls],
       dialyzer: [flags: [:error_handling, :race_conditions, :underspecs]],
       # Docs
-      name: "Simple Cache",
+      name: "Simpler Cache",
       source_url: "https://github.com/IRog/simpler_cache",
       homepage_url: "https://github.com/IRog/simpler_cache",
       docs: [
