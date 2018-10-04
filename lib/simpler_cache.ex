@@ -37,12 +37,19 @@ defmodule SimplerCache do
   @doc "Inserts new item into cache"
   @spec insert_new(any, any) :: {:ok, :inserted} | {:error, :item_is_in_cache} | {:error, any}
   def insert_new(key, value) do
-    with {:ok, t_ref} <- :timer.apply_after(@global_ttl_ms, :ets, :delete, [@table_name, key]),
-         true <- :ets.insert_new(@table_name, {key, value, t_ref}) do
-      {:ok, :inserted}
-    else
-      {:error, err} -> {:error, err}
-      false -> {:error, :item_is_in_cache}
+    case :timer.apply_after(@global_ttl_ms, :ets, :delete, [@table_name, key]) do
+      {:ok, t_ref} ->
+        case :ets.insert_new(@table_name, {key, value, t_ref}) do
+          true ->
+            {:ok, :inserted}
+
+          false ->
+            :timer.cancel(t_ref)
+            {:error, :item_is_in_cache}
+        end
+
+      {:error, err} ->
+        {:error, err}
     end
   end
 
