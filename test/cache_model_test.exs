@@ -111,10 +111,10 @@ defmodule PropCheck.Test.CacheModel do
     def post(entries, [key], call_result) do
       case Map.get(entries, key) do
         nil ->
-          call_result == true
+          call_result == {:ok, :not_found}
 
         _any ->
-          call_result == true
+          call_result == {:ok, :deleted}
       end
     end
   end

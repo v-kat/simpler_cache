@@ -7,9 +7,7 @@ defmodule SimplerCache do
   @type update_function :: (any -> any)
   @type fallback_function :: (() -> any)
 
-  @doc """
-  Returns an item from cache or nil if not found
-  """
+  @doc "Returns an item from cache or nil if not found"
   @spec get(any) :: nil | any
   def get(key) do
     maybe_tuple =
@@ -25,9 +23,7 @@ defmodule SimplerCache do
     end
   end
 
-  @doc """
-  Inserts new item or overwrites old item's value
-  """
+  @doc "Inserts new item or overwrites old item's value"
   @spec put(any, any) :: {:ok, :inserted} | {:error, any}
   def put(key, value) do
     with {:ok, t_ref} <- :timer.apply_after(@global_ttl_ms, :ets, :delete, [@table_name, key]),
@@ -38,9 +34,7 @@ defmodule SimplerCache do
     end
   end
 
-  @doc """
-  Inserts new item into cache
-  """
+  @doc "Inserts new item into cache"
   @spec insert_new(any, any) :: {:ok, :inserted} | {:error, :item_is_in_cache} | {:error, any}
   def insert_new(key, value) do
     with {:ok, t_ref} <- :timer.apply_after(@global_ttl_ms, :ets, :delete, [@table_name, key]),
@@ -52,18 +46,16 @@ defmodule SimplerCache do
     end
   end
 
-  @doc """
-  Deletes item from cache returns successfully if it doesn't exist as well
-  """
-  @spec delete(any) :: true
+  @doc "Deletes item from cache or does no-op"
+  @spec delete(any) :: {:ok, :deleted} | {:ok, :not_found}
   def delete(key) do
     case :ets.take(@table_name, key) do
       [] ->
-        true
+        {:ok, :not_found}
 
       [{_k, _v, t_ref} | _] ->
         :timer.cancel(t_ref)
-        true
+        {:ok, :deleted}
     end
   end
 
@@ -101,17 +93,13 @@ defmodule SimplerCache do
     end
   end
 
-  @doc """
-  Returns the number of elements in the cache
-  """
+  @doc "Returns the number of elements in the cache"
   @spec size() :: non_neg_integer
   def size() do
     :ets.info(@table_name, :size)
   end
 
-  @doc """
-  Sets the ttl to a specific value in ms over 100 for an item
-  """
+  @doc "Sets the ttl to a specific value in ms over 100 for an item"
   @spec set_ttl_ms(any, pos_integer) ::
           {:ok, :updated} | {:error, :failed_to_update_element} | {:error, any}
   def set_ttl_ms(key, time_ms) when time_ms > 100 do
