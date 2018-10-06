@@ -11,11 +11,17 @@ defmodule SimplerCacheTest do
 
   @tag timeout: 105_000
   property "Set ttl guarantees key dies after x time", numtests: 120 do
-    forall {key, val, timer_ttl_ms} <- {term(), term(), integer(101, 100_000)} do
+    forall {key, val, timer_ttl_ms} <- {term(), term(), integer(1, 100_000)} do
       {:ok, :inserted} = SimplerCache.insert_new(key, val)
       {:ok, :updated} = SimplerCache.set_ttl_ms(key, timer_ttl_ms)
       :timer.sleep(timer_ttl_ms + 10)
       equals(SimplerCache.get(key), nil)
+    end
+  end
+
+  property "doesnt explode on ttl set with missing item", numtests: 5 do
+    forall {key, timer_ttl_ms} <- {term(), integer(101, :inf)} do
+      equals({:error, :element_not_found}, SimplerCache.set_ttl_ms(key, timer_ttl_ms))
     end
   end
 

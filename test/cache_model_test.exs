@@ -7,6 +7,7 @@ defmodule PropCheck.Test.CacheModel do
   use PropCheck.StateM.DSL
 
   @table_name Application.get_env(:simpler_cache, :cache_name, :simpler_cache)
+
   #########################################################################
   ### The properties
   #########################################################################

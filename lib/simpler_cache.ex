@@ -108,26 +108,34 @@ defmodule SimplerCache do
     :ets.info(@table_name, :size)
   end
 
-  @doc "Sets the ttl to a specific value in ms over 100 for an item"
+  @doc "Sets the ttl to a specific value in ms greater than 0 for an item"
   @spec set_ttl_ms(any, pos_integer) ::
-          {:ok, :updated} | {:error, :failed_to_update_element} | {:error, any}
-  def set_ttl_ms(key, time_ms) when time_ms > 100 do
-    t_ref = :ets.lookup_element(@table_name, key, 3)
-    :timer.cancel(t_ref)
+          {:ok, :updated}
+          | {:error, :failed_to_update_element}
+          | {:error, :element_not_found}
+          | {:error, any}
+  def set_ttl_ms(key, time_ms) when time_ms > 0 do
+    try do
+      t_ref = :ets.lookup_element(@table_name, key, 3)
+      :timer.cancel(t_ref)
 
-    case :timer.apply_after(time_ms, :ets, :delete, [@table_name, key]) do
-      {:ok, new_t_ref} ->
-        case :ets.update_element(@table_name, key, {3, new_t_ref}) do
-          true ->
-            {:ok, :updated}
+      case :timer.apply_after(time_ms, :ets, :delete, [@table_name, key]) do
+        {:ok, new_t_ref} ->
+          case :ets.update_element(@table_name, key, {3, new_t_ref}) do
+            true ->
+              {:ok, :updated}
 
-          false ->
-            :timer.cancel(new_t_ref)
-            {:error, :failed_to_update_element}
-        end
+            false ->
+              :timer.cancel(new_t_ref)
+              {:error, :failed_to_update_element}
+          end
 
-      {:error, reason} ->
-        {:error, reason}
+        {:error, reason} ->
+          {:error, reason}
+      end
+    rescue
+      ArgumentError ->
+        {:error, :element_not_found}
     end
   end
 end
