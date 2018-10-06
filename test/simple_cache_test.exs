@@ -32,7 +32,9 @@ defmodule SimplerCacheTest do
       delay = 1
       {:ok, :inserted} = SimplerCache.put(key, contender_val)
       {:ok, contender_1} = :timer.apply_interval(delay, SimplerCache, :put, [key, contender_val])
-      {:ok, contender_2} = :timer.apply_interval(delay + 1, SimplerCache, :put, [key, contender_val])
+
+      {:ok, contender_2} =
+        :timer.apply_interval(delay + 1, SimplerCache, :put, [key, contender_val])
 
       :timer.sleep(delay)
 
@@ -47,13 +49,22 @@ defmodule SimplerCacheTest do
       contender_val = :something
       delay = 1
       {:ok, contender_1} = :timer.apply_interval(delay, SimplerCache, :put, [key, contender_val])
-      {:ok, contender_2} = :timer.apply_interval(delay + 1, SimplerCache, :put, [key, contender_val])
+
+      {:ok, contender_2} =
+        :timer.apply_interval(delay + 1, SimplerCache, :put, [key, contender_val])
+
       :timer.sleep(delay)
 
       new_val = fallback_fn.()
       equals(new_val, SimplerCache.get_or_store(key, fallback_fn))
       equals({:ok, :cancel}, :timer.cancel(contender_1))
       equals({:ok, :cancel}, :timer.cancel(contender_2))
+    end
+  end
+
+  property "get for not inserted keys works", numtests: 5 do
+    forall {key} <- {term()} do
+      equals(nil, SimplerCache.get(key))
     end
   end
 end

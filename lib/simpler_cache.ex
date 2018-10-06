@@ -15,6 +15,7 @@ defmodule SimplerCache do
       :ets.lookup(@table_name, key)
       |> List.first()
 
+    # the schema for items is {key, value, timer_reference}
     case maybe_tuple do
       item when is_tuple(item) ->
         elem(item, 1)

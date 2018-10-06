@@ -53,7 +53,7 @@ defmodule PropCheck.Test.CacheModel do
 
   def weight(_),
     do: %{
-      get: 1,
+      get: 2,
       put: 2,
       insert_new: 2,
       delete: 2,
