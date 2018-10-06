@@ -1,6 +1,6 @@
 # SimplerCache
 
-[![Build Status](https://travis-ci.com/IRog/simpler_cache.svg?branch=master)](https://travis-ci.com/IRog/simpler_cache) [![Coverage Status](https://coveralls.io/repos/github/IRog/simpler_cache/badge.svg?branch=master)](https://coveralls.io/github/IRog/simpler_cache?branch=master)  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Build Status](https://travis-ci.com/IRog/simpler_cache.svg?branch=master)](https://travis-ci.com/IRog/simpler_cache) [![Coverage Status](https://coveralls.io/repos/github/IRog/simpler_cache/badge.svg?branch=master)](https://coveralls.io/github/IRog/simpler_cache?branch=master) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Hex pm](http://img.shields.io/hexpm/v/simpler_cache.svg?style=flat)](https://hex.pm/packages/simpler_cache)
 
 ## Description
 
