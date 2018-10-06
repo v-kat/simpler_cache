@@ -6,6 +6,7 @@ defmodule SimplerCache do
   @global_ttl_ms Application.get_env(:simpler_cache, :global_ttl_ms, 10_000)
   @type update_function :: (any -> any)
   @type fallback_function :: (() -> any)
+  @compile {:inline, get: 1, put: 2, insert_new: 2, delete: 1, size: 0, set_ttl_ms: 2}
 
   @doc "Returns an item from cache or nil if not found"
   @spec get(any) :: nil | any
