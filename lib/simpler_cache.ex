@@ -29,7 +29,7 @@ defmodule SimplerCache do
   @spec put(any, any) :: {:ok, :inserted} | {:error, any}
   def put(key, value) do
     with {:ok, t_ref} <- :timer.apply_after(@global_ttl_ms, :ets, :delete, [@table_name, key]),
-         :ets.insert(@table_name, {key, value, t_ref}) do
+         true <- :ets.insert(@table_name, {key, value, t_ref}) do
       {:ok, :inserted}
     else
       {:error, err} -> {:error, err}

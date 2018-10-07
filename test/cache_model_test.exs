@@ -13,7 +13,7 @@ defmodule PropCheck.Test.CacheModel do
   #########################################################################
 
   @tag timeout: 240_000
-  property "run the cache commands", [:verbose, numtests: 200, max_size: 60] do
+  property "run the cache commands", [:verbose, numtests: 100, max_size: 60] do
     forall cmds <- commands(__MODULE__) do
       trap_exit do
         execution = run_commands(cmds)
@@ -90,14 +90,14 @@ defmodule PropCheck.Test.CacheModel do
     def impl(key, val), do: SimplerCache.insert_new(key, val)
     def args(_state), do: [key(), val()]
     def next(old_state, _args, {:error, _any}), do: old_state
-    def next(old_state, [key, val], _any), do: Map.put(old_state, key, val)
+    def next(old_state, [key, val], _any), do: Map.put_new(old_state, key, val)
 
-    def post(entries, [key, new_val], call_result) do
-      case Map.get(entries, key, new_val) do
-        val when val != new_val ->
+    def post(entries, [key, _new_val], call_result) do
+      case Map.has_key?(entries, key) do
+        true ->
           call_result == {:error, :item_is_in_cache}
 
-        _any ->
+        false ->
           call_result == {:ok, :inserted}
       end
     end
