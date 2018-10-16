@@ -16,6 +16,7 @@ defmodule PropCheck.Test.CacheStateM do
   property "run the cache commands in parallel", [:verbose, numtests: 300, max_size: 40] do
     forall cmds in parallel_commands(__MODULE__) do
       trap_exit do
+        :ets.delete_all_objects(@table_name)
         {history, state, result} = run_parallel_commands(__MODULE__, cmds)
         :ets.delete_all_objects(@table_name)
 

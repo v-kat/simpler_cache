@@ -16,6 +16,7 @@ defmodule PropCheck.Test.CacheModel do
   property "run the cache commands", [:verbose, numtests: 100, max_size: 60] do
     forall cmds <- commands(__MODULE__) do
       trap_exit do
+        :ets.delete_all_objects(@table_name)
         execution = run_commands(cmds)
         :ets.delete_all_objects(@table_name)
 
