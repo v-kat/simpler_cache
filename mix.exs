@@ -4,8 +4,8 @@ defmodule SimplerCache.MixProject do
   def project do
     [
       app: :simpler_cache,
-      version: "0.1.4",
-      elixir: "~> 1.7",
+      version: "0.1.5",
+      elixir: "~> 1.5",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: description(),
@@ -36,15 +36,16 @@ defmodule SimplerCache.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:propcheck, "~> 1.1", only: :test},
+      # {:propcheck, "~> 1.3", only: :test},
+      {:propcheck, git: "https://github.com/IRog/propcheck.git"},
       {:excoveralls, "~> 0.10", only: :test},
-      {:dialyxir, "~> 0.5", only: [:dev], runtime: false},
+      {:dialyxir, "~> 1.0.0-rc.3", only: :dev, runtime: false},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false}
     ]
   end
 
   defp description() do
-    "A simple cache based on ets and timers. Tested with property model testing."
+    "A simple cache with ttl based on ets and timers. Tested with property model testing."
   end
 
   defp package() do

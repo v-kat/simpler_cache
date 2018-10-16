@@ -47,13 +47,13 @@ defmodule PropCheck.Test.CacheStateM do
   defp fallback_function(), do: function(0, term())
 
   def command(_state) do
-    oneof([
-      {:call, SimplerCache, :get, [key()]},
-      {:call, SimplerCache, :put, [key(), val()]},
-      {:call, SimplerCache, :insert_new, [key(), val()]},
-      {:call, SimplerCache, :delete, [key()]},
-      {:call, SimplerCache, :update_existing, [key(), update_function()]},
-      {:call, SimplerCache, :get_or_store, [key(), fallback_function()]}
+    frequency([
+      {2, {:call, SimplerCache, :get, [key()]}},
+      {2, {:call, SimplerCache, :put, [key(), val()]}},
+      {2, {:call, SimplerCache, :insert_new, [key(), val()]}},
+      {2, {:call, SimplerCache, :delete, [key()]}},
+      {1, {:call, SimplerCache, :update_existing, [key(), update_function()]}},
+      {3, {:call, SimplerCache, :get_or_store, [key(), fallback_function()]}}
     ])
   end
 
