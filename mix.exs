@@ -36,11 +36,15 @@ defmodule SimplerCache.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # {:propcheck, "~> 1.3", only: :test},
-      {:propcheck, git: "https://github.com/IRog/propcheck.git"},
+      {:propcheck, "~> 1.1.2", only: :test},
+      # {:propcheck, git: "https://github.com/IRog/propcheck.git"},
       {:excoveralls, "~> 0.10", only: :test},
       {:dialyxir, "~> 1.0.0-rc.3", only: :dev, runtime: false},
-      {:ex_doc, "~> 0.19", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.19", only: :dev, runtime: false},
+      {:benchee, "~> 0.11", only: :dev},
+      {:benchee_html, "~> 0.4", only: :dev},
+      {:con_cache, "~> 0.13.0"},
+      {:cachex, "~> 3.1"}
     ]
   end
 
