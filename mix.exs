@@ -12,8 +12,7 @@ defmodule SimplerCache.MixProject do
       package: package(),
       test_coverage: [tool: ExCoveralls],
       dialyzer: [
-        ignore_warnings: "dialyzer.ignore-warnings",
-        flags: [:error_handling, :race_conditions, :underspecs]
+        flags: [:error_handling, :underspecs]
       ],
       # Docs
       name: "Simpler Cache",

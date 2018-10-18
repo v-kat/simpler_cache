@@ -1,1 +1,0 @@
-lib/simpler_cache.ex:38: The call ets:insert('simpler_cache',{_,_,timer:tref(),integer()}) might have an unintended effect due to a possible race condition caused by its combination with the ets:lookup('simpler_cache',_key@1::any()) call in simpler_cache.ex on line 101
