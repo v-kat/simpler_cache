@@ -1,6 +1,10 @@
 # SimplerCache
 
-[![Build Status](https://travis-ci.com/IRog/simpler_cache.svg?branch=master)](https://travis-ci.com/IRog/simpler_cache) [![Coverage Status](https://coveralls.io/repos/github/IRog/simpler_cache/badge.svg?branch=master)](https://coveralls.io/github/IRog/simpler_cache?branch=master) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Hex pm](http://img.shields.io/hexpm/v/simpler_cache.svg?style=flat)](https://hex.pm/packages/simpler_cache)
+[![Build Status](https://travis-ci.com/IRog/simpler_cache.svg?branch=master)](https://travis-ci.com/IRog/simpler_cache)
+[![Coverage Status](https://coveralls.io/repos/github/IRog/simpler_cache/badge.svg?branch=master)](https://coveralls.io/github/IRog/simpler_cache?branch=master)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Hex pm](http://img.shields.io/hexpm/v/simpler_cache.svg?style=flat)](https://hex.pm/packages/simpler_cache)
+[![hexdocs.pm](https://img.shields.io/badge/docs-latest-green.svg?style=flat-square)](https://hexdocs.pm/simpler_cache/)
 
 ## Description
 
@@ -18,7 +22,7 @@ by adding `simpler_cache` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:simpler_cache, "~> 0.1.0"}
+    {:simpler_cache, "~> 0.1.5"}
   ]
 end
 ```
