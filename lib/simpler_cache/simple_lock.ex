@@ -12,8 +12,6 @@ defmodule SimplerCache.SimpleLock do
 
   @impl true
   def handle_call(:request_lock, _from, :unlocked) do
-    # In 20 seconds unlock failsafe
-    Process.send_after(self(), :unlock, 1000 * 20)
     {:reply, :got_lock, :locked}
   end
 

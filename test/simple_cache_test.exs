@@ -27,6 +27,7 @@ defmodule SimplerCacheTest do
 
   property "insert new doesnt insert if item exists already", numtests: 5 do
     forall {key, val} <- {term(), term()} do
+      :ets.delete_all_objects(@table_name)
       {:ok, :inserted} = SimplerCache.insert_new(key, val)
       equals({:error, :item_is_in_cache}, SimplerCache.insert_new(key, :new_val))
     end
@@ -71,6 +72,16 @@ defmodule SimplerCacheTest do
   property "get for not inserted keys works", numtests: 5 do
     forall {key} <- {term()} do
       equals(nil, SimplerCache.get(key))
+    end
+  end
+
+  property "get_or_store locks correctly", numtests: 5 do
+    forall {key, val, fallback_fn} <- {term(), term(), function(0, term())} do
+      {:ok, :inserted} = SimplerCache.put(key, val)
+      new_tll_ms = 100
+      SimplerCache.set_ttl_ms(key, new_tll_ms)
+      :timer.sleep(round(new_tll_ms / 6))
+      equals(fallback_fn.(), SimplerCache.get_or_store(key, fallback_fn))
     end
   end
 end

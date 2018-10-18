@@ -97,9 +97,9 @@ defmodule SimplerCache do
   if the item is near expiry it will also update the cache and ttl to avoid thundering herd issues
   """
   @spec get_or_store(any, fallback_function) :: any
-  def get_or_store(key, passed_fn) when is_function(passed_fn, 0) do
+  def get_or_store(key, fallback_fn) when is_function(fallback_fn, 0) do
     with [] <- :ets.lookup(@table_name, key),
-         new_val = passed_fn.(),
+         new_val = fallback_fn.(),
          {:ok, :inserted} <- SimplerCache.insert_new(key, new_val) do
       new_val
     else
@@ -107,7 +107,7 @@ defmodule SimplerCache do
         if expiry - utc_unix() <= 0 do
           case GenServer.call(:cache_lock, :request_lock) do
             :got_lock ->
-              new_val = passed_fn.()
+              new_val = fallback_fn.()
               {:ok, :inserted} = SimplerCache.put(key, new_val)
               :timer.cancel(t_ref)
               GenServer.call(:cache_lock, :unlock)
@@ -121,7 +121,7 @@ defmodule SimplerCache do
         end
 
       {:error, _reason} ->
-        get_or_store(key, passed_fn)
+        get_or_store(key, fallback_fn)
     end
   end
 
@@ -144,10 +144,11 @@ defmodule SimplerCache do
 
       case :timer.apply_after(time_ms, :ets, :delete, [@table_name, key]) do
         {:ok, new_t_ref} ->
-          case :ets.update_element(@table_name, key, {3, new_t_ref}) do
-            true ->
-              {:ok, :updated}
-
+          with true <- :ets.update_element(@table_name, key, {3, new_t_ref}),
+               expiry = utc_unix() + time_ms - @expiry_buffer_s,
+               true <- :ets.update_element(@table_name, key, {4, expiry}) do
+            {:ok, :updated}
+          else
             false ->
               :timer.cancel(new_t_ref)
               {:error, :failed_to_update_element}
