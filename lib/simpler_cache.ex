@@ -4,9 +4,14 @@ defmodule SimplerCache do
   """
   @table_name Application.get_env(:simpler_cache, :cache_name, :simpler_cache)
   @global_ttl_ms Application.get_env(:simpler_cache, :global_ttl_ms, 10_000)
+  @global_ttl_s round(@global_ttl_ms / 1000)
+  @expiry_buffer_s round(@global_ttl_s / 5)
+
   @type update_function :: (any -> any)
   @type fallback_function :: (() -> any)
-  @compile {:inline, get: 1, put: 2, insert_new: 2, delete: 1, size: 0, set_ttl_ms: 2}
+
+  @compile {:inline,
+            get: 1, put: 2, insert_new: 2, delete: 1, size: 0, set_ttl_ms: 2, utc_unix: 0}
 
   @doc "Returns an item from cache or nil if not found"
   @spec get(any) :: nil | any
@@ -15,7 +20,7 @@ defmodule SimplerCache do
       :ets.lookup(@table_name, key)
       |> List.first()
 
-    # the schema for items is {key, value, timer_reference}
+    # the schema for items is {key, value, timer_reference, expiry_unix, herd_updating}
     case maybe_tuple do
       item when is_tuple(item) ->
         elem(item, 1)
@@ -29,7 +34,8 @@ defmodule SimplerCache do
   @spec put(any, any) :: {:ok, :inserted} | {:error, any}
   def put(key, value) do
     with {:ok, t_ref} <- :timer.apply_after(@global_ttl_ms, :ets, :delete, [@table_name, key]),
-         true <- :ets.insert(@table_name, {key, value, t_ref}) do
+         expiry = utc_unix() + @global_ttl_s - @expiry_buffer_s,
+         true <- :ets.insert(@table_name, {key, value, t_ref, expiry}) do
       {:ok, :inserted}
     else
       {:error, err} -> {:error, err}
@@ -41,7 +47,9 @@ defmodule SimplerCache do
   def insert_new(key, value) do
     case :timer.apply_after(@global_ttl_ms, :ets, :delete, [@table_name, key]) do
       {:ok, t_ref} ->
-        case :ets.insert_new(@table_name, {key, value, t_ref}) do
+        expiry = utc_unix() + @global_ttl_s - @expiry_buffer_s
+
+        case :ets.insert_new(@table_name, {key, value, t_ref, expiry}) do
           true ->
             {:ok, :inserted}
 
@@ -62,20 +70,21 @@ defmodule SimplerCache do
       [] ->
         {:ok, :not_found}
 
-      [{_k, _v, t_ref} | _] ->
+      [{_k, _v, t_ref, _expiry} | _] ->
         :timer.cancel(t_ref)
         {:ok, :deleted}
     end
   end
 
   @doc """
-  Updates existing value in cache based on old value
+  Updates existing value in cache based on old value and resets the timer
   Warning the below may retry a bit on heavy contention
   """
   @spec update_existing(any, update_function) :: {:ok, :updated} | {:error, :failed_to_find_entry}
   def update_existing(key, passed_fn) when is_function(passed_fn, 1) do
-    with [{key, old_val, _timer} | _] <- :ets.take(@table_name, key),
+    with [{key, old_val, t_ref} | _] <- :ets.take(@table_name, key),
          {:ok, :inserted} <- SimplerCache.insert_new(key, passed_fn.(old_val)) do
+      :timer.cancel(t_ref)
       {:ok, :updated}
     else
       [] -> {:error, :failed_to_find_entry}
@@ -85,7 +94,7 @@ defmodule SimplerCache do
 
   @doc """
   Gets or stores an item based on a passed in function
-  Warning the below may retry a bit on heavy contention
+  if the item is near expiry it will also update the cache and ttl to avoid thundering herd issues
   """
   @spec get_or_store(any, fallback_function) :: any
   def get_or_store(key, passed_fn) when is_function(passed_fn, 0) do
@@ -94,8 +103,22 @@ defmodule SimplerCache do
          {:ok, :inserted} <- SimplerCache.insert_new(key, new_val) do
       new_val
     else
-      [{_key, val, _timer} | _] ->
-        val
+      [{_key, val, t_ref, expiry} | _] ->
+        if expiry - utc_unix() <= 0 do
+          case GenServer.call(:cache_lock, :request_lock) do
+            :got_lock ->
+              new_val = passed_fn.()
+              {:ok, :inserted} = SimplerCache.put(key, new_val)
+              :timer.cancel(t_ref)
+              GenServer.call(:cache_lock, :unlock)
+              new_val
+
+            :unable_to_get_lock ->
+              val
+          end
+        else
+          val
+        end
 
       {:error, _reason} ->
         get_or_store(key, passed_fn)
@@ -138,4 +161,6 @@ defmodule SimplerCache do
         {:error, :element_not_found}
     end
   end
+
+  defp utc_unix(), do: DateTime.utc_now() |> DateTime.to_unix()
 end

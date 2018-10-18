@@ -8,8 +8,7 @@
 
 ## Description
 
-A very simple cache. It uses timers for the ttl and ets for the storage.
-No extra lock system is used. Only ets and atomic replace is done, when expected.
+A very simple cache. It uses timers for the ttl and ets for the storage. A lock is used in get_or_store only to prevent thundering herd issues and pre-emptively refresh the cache (it is only used in low ttl left of item situations).
 Mostly wrapper around ets and kept very simple by using newer apis and recent erlang improvements.
 
 Using property model testing and property tests to verify the cache via propcheck.
