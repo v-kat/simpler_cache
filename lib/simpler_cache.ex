@@ -82,9 +82,9 @@ defmodule SimplerCache do
   """
   @spec update_existing(any, update_function) :: {:ok, :updated} | {:error, :failed_to_find_entry}
   def update_existing(key, passed_fn) when is_function(passed_fn, 1) do
-    with [{key, old_val, t_ref} | _] <- :ets.take(@table_name, key),
+    with [{key, old_val, t_ref, _expiry} | _] <- :ets.take(@table_name, key),
+         :timer.cancel(t_ref),
          {:ok, :inserted} <- SimplerCache.insert_new(key, passed_fn.(old_val)) do
-      :timer.cancel(t_ref)
       {:ok, :updated}
     else
       [] -> {:error, :failed_to_find_entry}
