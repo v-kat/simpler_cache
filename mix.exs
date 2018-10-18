@@ -11,7 +11,10 @@ defmodule SimplerCache.MixProject do
       description: description(),
       package: package(),
       test_coverage: [tool: ExCoveralls],
-      dialyzer: [flags: [:error_handling, :race_conditions, :underspecs]],
+      dialyzer: [
+        ignore_warnings: "dialyzer.ignore-warnings",
+        flags: [:error_handling, :race_conditions, :underspecs]
+      ],
       # Docs
       name: "Simpler Cache",
       source_url: "https://github.com/IRog/simpler_cache",
