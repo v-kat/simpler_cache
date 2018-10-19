@@ -4,7 +4,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/IRog/simpler_cache/badge.svg?branch=master)](https://coveralls.io/github/IRog/simpler_cache?branch=master)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Hex pm](http://img.shields.io/hexpm/v/simpler_cache.svg?style=flat)](https://hex.pm/packages/simpler_cache)
-[![hexdocs.pm](https://img.shields.io/badge/docs-latest-green.svg?style=flat-square)](https://hexdocs.pm/simpler_cache/)
+[![hexdocs.pm](https://img.shields.io/badge/docs-latest-green.svg?style=flat)](https://hexdocs.pm/simpler_cache/)
 
 ## Description
 
