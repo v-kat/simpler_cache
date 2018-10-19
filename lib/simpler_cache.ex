@@ -110,7 +110,7 @@ defmodule SimplerCache do
               new_val = fallback_fn.()
               {:ok, :inserted} = SimplerCache.put(key, new_val)
               :timer.cancel(t_ref)
-              GenServer.call(:cache_lock, :unlock)
+              :unlocked = GenServer.call(:cache_lock, :unlock)
               new_val
 
             :unable_to_get_lock ->

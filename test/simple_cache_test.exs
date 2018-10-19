@@ -84,4 +84,5 @@ defmodule SimplerCacheTest do
       equals(fallback_fn.(), SimplerCache.get_or_store(key, fallback_fn))
     end
   end
+
 end
