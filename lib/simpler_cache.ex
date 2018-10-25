@@ -1,6 +1,6 @@
 defmodule SimplerCache do
   @moduledoc """
-  Simple cache implementation with no locks or other more complicated features.
+  Simple cache implementation with no complicated features.
   """
   @table_name Application.get_env(:simpler_cache, :cache_name, :simpler_cache)
   @global_ttl_ms Application.get_env(:simpler_cache, :global_ttl_ms, 10_000)
