@@ -9,7 +9,7 @@ defmodule BenchmarkHelpers do
 
   def init() do
     Cachex.start_link(:cachex_cache, [interval: nil])
-    ConCache.start_link(name: :con_cache, ttl_check_interval: false)
+    ConCache.start_link(name: :con_cache, ttl_check_interval: :timer.seconds(2), global_ttl: 10_000)
   end
 
   def insert() do
@@ -19,13 +19,18 @@ defmodule BenchmarkHelpers do
   end
 end
 
+key_to_save = %{map: %{with: 1234, nested: "data of things"}, for: "more real", world: 5678, data: 90}
+
+store_fn = fn () -> key_to_save end
+cachex_ttl = 10_000
+
 BenchmarkHelpers.init()
-BenchmarkHelpers.insert()
+# BenchmarkHelpers.insert()
 
 Benchee.run(%{
-  "cachex_cache_10" => BenchmarkHelpers.async_times(10, fn -> Cachex.get(:cachex_cache, "key") end),
-  "con_cache_10" => BenchmarkHelpers.async_times(10, fn -> ConCache.get(:con_cache, "key") end),
-  "simpler_cache_10" => BenchmarkHelpers.async_times(10, fn -> SimplerCache.get("key") end)
+  "cachex_cache_10" => BenchmarkHelpers.async_times(10, fn -> Cachex.fetch(:cachex_cache, "key", store_fn, ttl: cachex_ttl) end),
+  "con_cache_10" => BenchmarkHelpers.async_times(10, fn -> ConCache.get_or_store(:con_cache, "key", store_fn) end),
+  "simpler_cache_10" => BenchmarkHelpers.async_times(10, fn -> SimplerCache.get_or_store("key", store_fn) end)
 },
   time: 15,
   warmup: 5,
@@ -36,9 +41,22 @@ Benchee.run(%{
   formatter_options: [html: [file: "benchmarks/output/10/results.html"]])
 
 Benchee.run(%{
-  "cachex_cache_100" => BenchmarkHelpers.async_times(100, fn -> Cachex.get(:cachex_cache, "key") end),
-  "con_cache_100" => BenchmarkHelpers.async_times(100, fn -> ConCache.get(:con_cache, "key") end),
-  "simpler_cache_100" => BenchmarkHelpers.async_times(100, fn -> SimplerCache.get("key") end)
+  "cachex_cache_50" => BenchmarkHelpers.async_times(50, fn -> Cachex.fetch(:cachex_cache, "key", store_fn, ttl: cachex_ttl) end),
+  "con_cache_50" => BenchmarkHelpers.async_times(50, fn -> ConCache.get_or_store(:con_cache, "key", store_fn) end),
+  "simpler_cache_50" => BenchmarkHelpers.async_times(50, fn -> SimplerCache.get_or_store("key", store_fn) end)
+},
+  time: 15,
+  warmup: 5,
+  formatters: [
+    Benchee.Formatters.HTML,
+    Benchee.Formatters.Console
+  ],
+  formatter_options: [html: [file: "benchmarks/output/50/results.html"]])
+
+Benchee.run(%{
+  "cachex_cache_100" => BenchmarkHelpers.async_times(100, fn -> Cachex.fetch(:cachex_cache, "key", store_fn, ttl: cachex_ttl) end),
+  "con_cache_100" => BenchmarkHelpers.async_times(100, fn -> ConCache.get_or_store(:con_cache, "key", store_fn) end),
+  "simpler_cache_100" => BenchmarkHelpers.async_times(100, fn -> SimplerCache.get_or_store("key", store_fn) end)
 },
   time: 15,
   warmup: 5,
@@ -49,9 +67,9 @@ Benchee.run(%{
   formatter_options: [html: [file: "benchmarks/output/100/results.html"]])
 
 Benchee.run(%{
-  "cachex_cache_1000" => BenchmarkHelpers.async_times(1_000, fn -> Cachex.get(:cachex_cache, "key") end),
-  "con_cache_1000" => BenchmarkHelpers.async_times(1_000, fn -> ConCache.get(:con_cache, "key") end),
-  "simpler_cache_1000" => BenchmarkHelpers.async_times(1_000, fn -> SimplerCache.get("key") end)
+  "cachex_cache_1_000" => BenchmarkHelpers.async_times(1_000, fn -> Cachex.fetch(:cachex_cache, "key", store_fn, ttl: cachex_ttl) end),
+  "con_cache_1_000" => BenchmarkHelpers.async_times(1_000, fn -> ConCache.get_or_store(:con_cache, "key", store_fn) end),
+  "simpler_cache_1_000" => BenchmarkHelpers.async_times(1_000, fn -> SimplerCache.get_or_store("key", store_fn) end)
 },
   time: 15,
   warmup: 5,
@@ -60,16 +78,3 @@ Benchee.run(%{
     Benchee.Formatters.Console
   ],
   formatter_options: [html: [file: "benchmarks/output/1000/results.html"]])
-
-Benchee.run(%{
-  "cachex_cache_4_000" => BenchmarkHelpers.async_times(4_000, fn -> Cachex.get(:cachex_cache, "key") end),
-  "con_cache_4_000" => BenchmarkHelpers.async_times(4_000, fn -> ConCache.get(:con_cache, "key") end),
-  "simpler_cache_4_000" => BenchmarkHelpers.async_times(4_000, fn -> SimplerCache.get("key") end)
-},
-  time: 15,
-  warmup: 5,
-  formatters: [
-    Benchee.Formatters.HTML,
-    Benchee.Formatters.Console
-  ],
-  formatter_options: [html: [file: "benchmarks/output/10000/results.html"]])
