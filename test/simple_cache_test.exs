@@ -3,6 +3,9 @@ defmodule SimplerCacheTest do
   use PropCheck
 
   @table_name Application.get_env(:simpler_cache, :cache_name, :simpler_cache)
+  @global_ttl_ms Application.get_env(:simpler_cache, :global_ttl_ms, 10_000)
+  @global_ttl_s round(@global_ttl_ms / 1000)
+  @expiry_buffer_s round(@global_ttl_s / 5)
 
   setup do
     :ets.delete_all_objects(@table_name)
@@ -16,6 +19,16 @@ defmodule SimplerCacheTest do
       {:ok, :updated} = SimplerCache.set_ttl_ms(key, timer_ttl_ms)
       :timer.sleep(timer_ttl_ms + 10)
       equals(SimplerCache.get(key), nil)
+    end
+  end
+
+  property "Set ttl and expires always equal", numtests: 20 do
+    forall {key, val, timer_ttl_ms} <- {term(), term(), integer(5_000, 100_000_000)} do
+      {:ok, :inserted} = SimplerCache.put(key, val)
+      {:ok, :updated} = SimplerCache.set_ttl_ms(key, timer_ttl_ms)
+      unix_now = DateTime.utc_now() |> DateTime.to_unix()
+      expire_at = :ets.lookup_element(@table_name, key, 4)
+      equals(expire_at - unix_now + @expiry_buffer_s, round(timer_ttl_ms / 1000))
     end
   end
 

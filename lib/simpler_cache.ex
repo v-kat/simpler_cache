@@ -108,7 +108,7 @@ defmodule SimplerCache do
         expires_in = expiry - utc_unix()
 
         if expires_in <= 0 do
-          case SimplerCache.set_ttl_ms(key, @expiry_buffer_ms) do
+          case SimplerCache.set_ttl_ms(key, 2 * @expiry_buffer_ms) do
             {:ok, :updated} ->
               new_val = fallback_fn.()
               {:ok, :inserted} = SimplerCache.put(key, new_val)
@@ -146,7 +146,7 @@ defmodule SimplerCache do
 
       case :timer.apply_after(time_ms, :ets, :delete, [@table_name, key]) do
         {:ok, new_t_ref} ->
-          with expiry = utc_unix() + time_ms - @expiry_buffer_s,
+          with expiry = utc_unix() + round(time_ms / 1000) - @expiry_buffer_s,
                true <- :ets.update_element(@table_name, key, {4, expiry}),
                true <- :ets.update_element(@table_name, key, {3, new_t_ref}) do
             {:ok, :updated}
