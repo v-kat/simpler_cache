@@ -1,10 +1,11 @@
 defmodule SimplerCache do
   @moduledoc """
-  Simple cache implementation with no complicated features.
+  Simple cache implementation with no complicated features or locks.
   """
   @table_name Application.get_env(:simpler_cache, :cache_name, :simpler_cache)
   @global_ttl_ms Application.get_env(:simpler_cache, :global_ttl_ms, 10_000)
   @global_ttl_s round(@global_ttl_ms / 1000)
+  @expiry_buffer_ms round(@global_ttl_ms / 5)
   @expiry_buffer_s round(@global_ttl_s / 5)
 
   @type update_function :: (any -> any)
@@ -104,16 +105,17 @@ defmodule SimplerCache do
       new_val
     else
       [{_key, val, t_ref, expiry} | _] ->
-        if expiry - utc_unix() <= 0 do
-          case GenServer.call(:cache_lock, :request_lock) do
-            :got_lock ->
+        expires_in = expiry - utc_unix()
+
+        if expires_in <= 0 do
+          case SimplerCache.set_ttl_ms(key, @expiry_buffer_ms) do
+            {:ok, :updated} ->
               new_val = fallback_fn.()
               {:ok, :inserted} = SimplerCache.put(key, new_val)
               :timer.cancel(t_ref)
-              :unlocked = GenServer.call(:cache_lock, :unlock)
               new_val
 
-            :unable_to_get_lock ->
+            {:error, _} ->
               val
           end
         else
@@ -144,9 +146,9 @@ defmodule SimplerCache do
 
       case :timer.apply_after(time_ms, :ets, :delete, [@table_name, key]) do
         {:ok, new_t_ref} ->
-          with true <- :ets.update_element(@table_name, key, {3, new_t_ref}),
-               expiry = utc_unix() + time_ms - @expiry_buffer_s,
-               true <- :ets.update_element(@table_name, key, {4, expiry}) do
+          with expiry = utc_unix() + time_ms - @expiry_buffer_s,
+               true <- :ets.update_element(@table_name, key, {4, expiry}),
+               true <- :ets.update_element(@table_name, key, {3, new_t_ref}) do
             {:ok, :updated}
           else
             false ->

@@ -75,7 +75,7 @@ defmodule SimplerCacheTest do
     end
   end
 
-  property "get_or_store locks correctly", numtests: 5 do
+  property "get_or_store fix works correctly", numtests: 5 do
     forall {key, val, fallback_fn} <- {term(), term(), function(0, term())} do
       {:ok, :inserted} = SimplerCache.put(key, val)
       new_tll_ms = 100
@@ -84,5 +84,4 @@ defmodule SimplerCacheTest do
       equals(fallback_fn.(), SimplerCache.get_or_store(key, fallback_fn))
     end
   end
-
 end

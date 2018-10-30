@@ -5,8 +5,7 @@ defmodule SimplerCache.Application do
 
   def start(_type, _args) do
     children = [
-      {SimplerCache.TableWorker, []},
-      {SimplerCache.SimpleLock, []}
+      {SimplerCache.TableWorker, []}
     ]
 
     opts = [strategy: :one_for_one, name: SimplerCache.Supervisor]
