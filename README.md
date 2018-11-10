@@ -32,3 +32,8 @@ config :simpler_cache,
   cache_name: :simpler_cache_test,
   global_ttl_ms: 100_000
 ```
+
+### 1000 processes concurrently hitting cache on 1 key
+![iterations](https://github.com/IRog/simpler_cache/blob/benchmark/images/1000_iterations.png)
+
+![runtime](https://github.com/IRog/simpler_cache/blob/benchmark/images/1000_runtime.png)

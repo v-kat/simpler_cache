@@ -4,15 +4,12 @@ defmodule SimplerCache do
   """
   @table_name Application.get_env(:simpler_cache, :cache_name, :simpler_cache)
   @global_ttl_ms Application.get_env(:simpler_cache, :global_ttl_ms, 10_000)
-  @global_ttl_s round(@global_ttl_ms / 1000)
   @expiry_buffer_ms round(@global_ttl_ms / 5)
-  @expiry_buffer_s round(@global_ttl_s / 5)
 
   @type update_function :: (any -> any)
   @type fallback_function :: (() -> any)
 
-  @compile {:inline,
-            get: 1, put: 2, insert_new: 2, delete: 1, size: 0, set_ttl_ms: 2, utc_unix: 0}
+  @compile {:inline, get: 1, put: 2, insert_new: 2, delete: 1, size: 0, set_ttl_ms: 2}
 
   @doc "Returns an item from cache or nil if not found"
   @spec get(any) :: nil | any
@@ -35,7 +32,7 @@ defmodule SimplerCache do
   @spec put(any, any) :: {:ok, :inserted} | {:error, any}
   def put(key, value) do
     with {:ok, t_ref} <- :timer.apply_after(@global_ttl_ms, :ets, :delete, [@table_name, key]),
-         expiry = utc_unix() + @global_ttl_s - @expiry_buffer_s,
+         expiry = :erlang.monotonic_time(:millisecond) + @global_ttl_ms - @expiry_buffer_ms,
          true <- :ets.insert(@table_name, {key, value, t_ref, expiry}) do
       {:ok, :inserted}
     else
@@ -48,7 +45,7 @@ defmodule SimplerCache do
   def insert_new(key, value) do
     case :timer.apply_after(@global_ttl_ms, :ets, :delete, [@table_name, key]) do
       {:ok, t_ref} ->
-        expiry = utc_unix() + @global_ttl_s - @expiry_buffer_s
+        expiry = :erlang.monotonic_time(:millisecond) + @global_ttl_ms - @expiry_buffer_ms
 
         case :ets.insert_new(@table_name, {key, value, t_ref, expiry}) do
           true ->
@@ -105,7 +102,7 @@ defmodule SimplerCache do
       new_val
     else
       [{_key, val, t_ref, expiry} | _] ->
-        expires_in = expiry - utc_unix()
+        expires_in = expiry - :erlang.monotonic_time(:millisecond)
 
         if expires_in <= 0 do
           case SimplerCache.set_ttl_ms(key, 2 * @expiry_buffer_ms) do
@@ -146,7 +143,7 @@ defmodule SimplerCache do
 
       case :timer.apply_after(time_ms, :ets, :delete, [@table_name, key]) do
         {:ok, new_t_ref} ->
-          with expiry = utc_unix() + round(time_ms / 1000) - @expiry_buffer_s,
+          with expiry = :erlang.monotonic_time(:millisecond) + time_ms - @expiry_buffer_ms,
                true <- :ets.update_element(@table_name, key, {4, expiry}),
                true <- :ets.update_element(@table_name, key, {3, new_t_ref}) do
             {:ok, :updated}
@@ -164,6 +161,4 @@ defmodule SimplerCache do
         {:error, :element_not_found}
     end
   end
-
-  defp utc_unix(), do: DateTime.utc_now() |> DateTime.to_unix()
 end
