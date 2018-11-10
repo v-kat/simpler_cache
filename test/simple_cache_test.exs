@@ -3,6 +3,8 @@ defmodule SimplerCacheTest do
   use PropCheck
 
   @table_name Application.get_env(:simpler_cache, :cache_name, :simpler_cache)
+  @global_ttl_ms Application.get_env(:simpler_cache, :global_ttl_ms, 10_000)
+  @expiry_buffer_ms round(@global_ttl_ms / 5)
 
   setup do
     :ets.delete_all_objects(@table_name)
@@ -19,6 +21,15 @@ defmodule SimplerCacheTest do
     end
   end
 
+  property "Set ttl and expires always equal", numtests: 20 do
+    forall {key, val, timer_ttl_ms} <- {term(), term(), integer(5_000, 100_000_000)} do
+      {:ok, :inserted} = SimplerCache.put(key, val)
+      {:ok, :updated} = SimplerCache.set_ttl_ms(key, timer_ttl_ms)
+      expire_at = :ets.lookup_element(@table_name, key, 4)
+      equals(expire_at - :erlang.monotonic_time(:millisecond) + @expiry_buffer_ms, timer_ttl_ms)
+    end
+  end
+
   property "doesnt explode on ttl set with missing item", numtests: 5 do
     forall {key, timer_ttl_ms} <- {term(), integer(101, :inf)} do
       equals({:error, :element_not_found}, SimplerCache.set_ttl_ms(key, timer_ttl_ms))
@@ -27,6 +38,7 @@ defmodule SimplerCacheTest do
 
   property "insert new doesnt insert if item exists already", numtests: 5 do
     forall {key, val} <- {term(), term()} do
+      :ets.delete_all_objects(@table_name)
       {:ok, :inserted} = SimplerCache.insert_new(key, val)
       equals({:error, :item_is_in_cache}, SimplerCache.insert_new(key, :new_val))
     end
@@ -71,6 +83,16 @@ defmodule SimplerCacheTest do
   property "get for not inserted keys works", numtests: 5 do
     forall {key} <- {term()} do
       equals(nil, SimplerCache.get(key))
+    end
+  end
+
+  property "get_or_store fix works correctly", numtests: 5 do
+    forall {key, val, fallback_fn} <- {term(), term(), function(0, term())} do
+      {:ok, :inserted} = SimplerCache.put(key, val)
+      new_tll_ms = 100
+      SimplerCache.set_ttl_ms(key, new_tll_ms)
+      :timer.sleep(round(new_tll_ms / 6))
+      equals(fallback_fn.(), SimplerCache.get_or_store(key, fallback_fn))
     end
   end
 end

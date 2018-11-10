@@ -11,7 +11,9 @@ defmodule SimplerCache.MixProject do
       description: description(),
       package: package(),
       test_coverage: [tool: ExCoveralls],
-      dialyzer: [flags: [:error_handling, :race_conditions, :underspecs]],
+      dialyzer: [
+        flags: [:error_handling, :underspecs]
+      ],
       # Docs
       name: "Simpler Cache",
       source_url: "https://github.com/IRog/simpler_cache",
@@ -36,8 +38,8 @@ defmodule SimplerCache.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:propcheck, "~> 1.1.2", only: :test},
-      # {:propcheck, git: "https://github.com/IRog/propcheck.git"},
+      # {:propcheck, "~> 1.1.3", only: :test},
+      {:propcheck, git: "https://github.com/alfert/propcheck.git"},
       {:excoveralls, "~> 0.10", only: :test},
       {:dialyxir, "~> 1.0.0-rc.3", only: :dev, runtime: false},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},

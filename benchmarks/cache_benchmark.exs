@@ -41,19 +41,6 @@ Benchee.run(%{
   formatter_options: [html: [file: "benchmarks/output/10/results.html"]])
 
 Benchee.run(%{
-  "cachex_cache_50" => BenchmarkHelpers.async_times(50, fn -> Cachex.fetch(:cachex_cache, "key", store_fn, ttl: cachex_ttl) end),
-  "con_cache_50" => BenchmarkHelpers.async_times(50, fn -> ConCache.get_or_store(:con_cache, "key", store_fn) end),
-  "simpler_cache_50" => BenchmarkHelpers.async_times(50, fn -> SimplerCache.get_or_store("key", store_fn) end)
-},
-  time: 15,
-  warmup: 5,
-  formatters: [
-    Benchee.Formatters.HTML,
-    Benchee.Formatters.Console
-  ],
-  formatter_options: [html: [file: "benchmarks/output/50/results.html"]])
-
-Benchee.run(%{
   "cachex_cache_100" => BenchmarkHelpers.async_times(100, fn -> Cachex.fetch(:cachex_cache, "key", store_fn, ttl: cachex_ttl) end),
   "con_cache_100" => BenchmarkHelpers.async_times(100, fn -> ConCache.get_or_store(:con_cache, "key", store_fn) end),
   "simpler_cache_100" => BenchmarkHelpers.async_times(100, fn -> SimplerCache.get_or_store("key", store_fn) end)
@@ -65,6 +52,19 @@ Benchee.run(%{
     Benchee.Formatters.Console
   ],
   formatter_options: [html: [file: "benchmarks/output/100/results.html"]])
+
+Benchee.run(%{
+  "cachex_cache_500" => BenchmarkHelpers.async_times(500, fn -> Cachex.fetch(:cachex_cache, "key", store_fn, ttl: cachex_ttl) end),
+  "con_cache_500" => BenchmarkHelpers.async_times(500, fn -> ConCache.get_or_store(:con_cache, "key", store_fn) end),
+  "simpler_cache_500" => BenchmarkHelpers.async_times(500, fn -> SimplerCache.get_or_store("key", store_fn) end)
+},
+  time: 15,
+  warmup: 5,
+  formatters: [
+    Benchee.Formatters.HTML,
+    Benchee.Formatters.Console
+  ],
+  formatter_options: [html: [file: "benchmarks/output/500/results.html"]])
 
 Benchee.run(%{
   "cachex_cache_1_000" => BenchmarkHelpers.async_times(1_000, fn -> Cachex.fetch(:cachex_cache, "key", store_fn, ttl: cachex_ttl) end),
