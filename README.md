@@ -39,6 +39,6 @@ config :simpler_cache,
 `mix run benchmarks/cache_benchmark.exs`
 
 ### 1000 processes concurrently hitting cache on 1 key
-![iterations](https://github.com/IRog/simpler_cache/tree/images/1000_iterations.png)
+![iterations](https://github.com/IRog/simpler_cache/blob/benchmark/images/1000_iterations.png)
 
-![runtime](https://github.com/IRog/simpler_cache/tree/images/1000_runtime.png)
+![runtime](https://github.com/IRog/simpler_cache/blob/benchmark/images/1000_runtime.png)
