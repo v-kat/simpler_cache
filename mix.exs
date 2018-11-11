@@ -47,7 +47,7 @@ defmodule SimplerCache.MixProject do
   end
 
   defp description() do
-    "A simple cache with ttl based on ets and timers. Tested with property model testing."
+    "A simple cache with ttl based on ets and timers. Tested with property model testing. Thundering herd fix, as well"
   end
 
   defp package() do
