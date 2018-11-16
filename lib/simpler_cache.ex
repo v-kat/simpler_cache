@@ -18,7 +18,7 @@ defmodule SimplerCache do
       :ets.lookup(@table_name, key)
       |> List.first()
 
-    # the schema for items is {key, value, timer_reference, expiry_ms, herd_updating}
+    # the schema for items is {key, value, timer_reference, expiry_ms}
     case maybe_tuple do
       item when is_tuple(item) ->
         elem(item, 1)
@@ -29,10 +29,10 @@ defmodule SimplerCache do
   end
 
   @doc "Inserts new item or overwrites old item's value"
-  @spec put(any, any) :: {:ok, :inserted} | {:error, any}
-  def put(key, value) do
-    with {:ok, t_ref} <- :timer.apply_after(@global_ttl_ms, :ets, :delete, [@table_name, key]),
-         expiry = :erlang.monotonic_time(:millisecond) + @global_ttl_ms - @expiry_buffer_ms,
+  @spec put(any, any, pos_integer) :: {:ok, :inserted} | {:error, any}
+  def put(key, value, ttl_ms \\ @global_ttl_ms) when is_integer(ttl_ms) and ttl_ms > 0 do
+    with {:ok, t_ref} <- :timer.apply_after(ttl_ms, :ets, :delete, [@table_name, key]),
+         expiry = :erlang.monotonic_time(:millisecond) + ttl_ms - @expiry_buffer_ms,
          true <- :ets.insert(@table_name, {key, value, t_ref, expiry}) do
       {:ok, :inserted}
     else
@@ -41,11 +41,12 @@ defmodule SimplerCache do
   end
 
   @doc "Inserts new item into cache"
-  @spec insert_new(any, any) :: {:ok, :inserted} | {:error, :item_is_in_cache} | {:error, any}
-  def insert_new(key, value) do
-    case :timer.apply_after(@global_ttl_ms, :ets, :delete, [@table_name, key]) do
+  @spec insert_new(any, any, pos_integer) ::
+          {:ok, :inserted} | {:error, :item_is_in_cache} | {:error, any}
+  def insert_new(key, value, ttl_ms \\ @global_ttl_ms) when is_integer(ttl_ms) and ttl_ms > 0 do
+    case :timer.apply_after(ttl_ms, :ets, :delete, [@table_name, key]) do
       {:ok, t_ref} ->
-        expiry = :erlang.monotonic_time(:millisecond) + @global_ttl_ms - @expiry_buffer_ms
+        expiry = :erlang.monotonic_time(:millisecond) + ttl_ms - @expiry_buffer_ms
 
         case :ets.insert_new(@table_name, {key, value, t_ref, expiry}) do
           true ->
@@ -94,11 +95,12 @@ defmodule SimplerCache do
   Gets or stores an item based on a passed in function
   if the item is near expiry it will also update the cache and ttl to avoid thundering herd issues
   """
-  @spec get_or_store(any, fallback_function) :: any
-  def get_or_store(key, fallback_fn) when is_function(fallback_fn, 0) do
+  @spec get_or_store(any, fallback_function, pos_integer) :: any
+  def get_or_store(key, fallback_fn, ttl_ms \\ @global_ttl_ms)
+      when is_integer(ttl_ms) and ttl_ms > 0 and is_function(fallback_fn, 0) do
     with [] <- :ets.lookup(@table_name, key),
          new_val = fallback_fn.(),
-         {:ok, :inserted} <- SimplerCache.insert_new(key, new_val) do
+         {:ok, :inserted} <- SimplerCache.insert_new(key, new_val, ttl_ms) do
       new_val
     else
       [{_key, val, t_ref, expiry} | _] ->
@@ -108,7 +110,7 @@ defmodule SimplerCache do
           case SimplerCache.set_ttl_ms(key, 2 * @expiry_buffer_ms) do
             {:ok, :updated} ->
               new_val = fallback_fn.()
-              {:ok, :inserted} = SimplerCache.put(key, new_val)
+              {:ok, :inserted} = SimplerCache.put(key, new_val, ttl_ms)
               :timer.cancel(t_ref)
               new_val
 
@@ -120,7 +122,7 @@ defmodule SimplerCache do
         end
 
       {:error, _reason} ->
-        get_or_store(key, fallback_fn)
+        get_or_store(key, fallback_fn, ttl_ms)
     end
   end
 
@@ -136,7 +138,7 @@ defmodule SimplerCache do
           | {:error, :failed_to_update_element}
           | {:error, :element_not_found}
           | {:error, any}
-  def set_ttl_ms(key, time_ms) when time_ms > 0 do
+  def set_ttl_ms(key, time_ms) when is_integer(time_ms) and time_ms > 0 do
     try do
       t_ref = :ets.lookup_element(@table_name, key, 3)
       :timer.cancel(t_ref)
