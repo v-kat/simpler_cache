@@ -20,7 +20,7 @@ by adding `simpler_cache` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:simpler_cache, "~> 0.1.7"}
+    {:simpler_cache, "~> 0.1.8"}
   ]
 end
 ```
