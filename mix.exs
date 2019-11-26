@@ -4,8 +4,8 @@ defmodule SimplerCache.MixProject do
   def project do
     [
       app: :simpler_cache,
-      version: "0.1.7",
-      elixir: "~> 1.5",
+      version: "0.1.8",
+      elixir: "~> 1.6",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: description(),

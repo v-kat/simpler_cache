@@ -3,8 +3,6 @@ defmodule SimplerCacheTest do
   use PropCheck
 
   @table_name Application.get_env(:simpler_cache, :cache_name, :simpler_cache)
-  @global_ttl_ms Application.get_env(:simpler_cache, :global_ttl_ms, 10_000)
-  @expiry_buffer_ms round(@global_ttl_ms / 5)
 
   setup do
     :ets.delete_all_objects(@table_name)
@@ -26,7 +24,12 @@ defmodule SimplerCacheTest do
       {:ok, :inserted} = SimplerCache.put(key, val)
       {:ok, :updated} = SimplerCache.set_ttl_ms(key, timer_ttl_ms)
       expire_at = :ets.lookup_element(@table_name, key, 4)
-      equals(expire_at - :erlang.monotonic_time(:millisecond) + @expiry_buffer_ms, timer_ttl_ms)
+      expiry_buffer_ms = round(timer_ttl_ms / 5)
+
+      equals(
+        round((expire_at - :erlang.monotonic_time(:millisecond) + expiry_buffer_ms) / 5_000),
+        round(timer_ttl_ms / 5_000)
+      )
     end
   end
 
@@ -86,12 +89,32 @@ defmodule SimplerCacheTest do
     end
   end
 
+  @tag timeout: 105_000
+  @final_value "I took awhile"
+  property "get_or_store warmings works", numtests: 5 do
+    forall {key, val, timer_ttl_ms} <- {term(), term(), integer(1000, 100_000)} do
+      sleep_time = round(timer_ttl_ms / 5)
+
+      SimplerCache.get_or_store(
+        key,
+        fn ->
+          Process.sleep(sleep_time)
+          @final_value
+        end,
+        timer_ttl_ms
+      )
+
+      new_val = SimplerCache.get_or_store(key, fn -> val end, timer_ttl_ms)
+      equals(new_val, @final_value)
+    end
+  end
+
   property "get_or_store fix works correctly", numtests: 5 do
     forall {key, val, fallback_fn} <- {term(), term(), function(0, term())} do
       {:ok, :inserted} = SimplerCache.put(key, val)
       new_tll_ms = 100
       SimplerCache.set_ttl_ms(key, new_tll_ms)
-      :timer.sleep(round(new_tll_ms / 6))
+      :timer.sleep(new_tll_ms - 10)
       equals(fallback_fn.(), SimplerCache.get_or_store(key, fallback_fn))
     end
   end

@@ -8,7 +8,7 @@
 
 ## Description
 
-A very simple cache. It uses timers for the ttl and ets for the storage. No locks are used and there is a fix to prevent thundering herd issues and pre-emptively refresh the cache (it triggers in low ttl left of item situations).
+A very simple cache. It uses timers for the ttl and ets for the storage. No locks are used and there is a fix to prevent thundering herd issues when the cache is warm and pre-emptively refresh the cache (it triggers in low ttl left of item situations). There is also a thundering herd fix for when the cache is cold using a sentinel key and a sleep.
 Mostly wrapper around ets and kept very simple by using newer apis and recent erlang improvements.
 
 Using property model testing and property tests to verify the cache via propcheck.
