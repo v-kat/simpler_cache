@@ -7,10 +7,6 @@ otp_release:
   - 20.3
   - 21.1
   - 22.1
-matrix:
-  exclude:
-  - elixir: 1.7.3
-    otp_release: 22.1
 dist: trusty
 sudo: false
 services: true
@@ -29,5 +25,4 @@ before_script:
   - travis_wait mix dialyzer --plt
 
 script:
- - MIX_ENV=test mix coveralls.travis
  - mix dialyzer --halt-exit-status
