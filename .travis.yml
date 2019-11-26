@@ -25,4 +25,5 @@ before_script:
   - travis_wait mix dialyzer --plt
 
 script:
+ - MIX_ENV=test mix test
  - mix dialyzer --halt-exit-status
